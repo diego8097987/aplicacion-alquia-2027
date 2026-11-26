@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 280" width="640" height="280" role="img" aria-label="Mueblería Alquia">
+  <rect width="640" height="280" fill="#FFFFFF" />
+  <!-- Geometric Pyramid Emblem -->
+  <g fill="#000000">
+    <!-- Top solid diamond -->
+    <polygon points="130,42 178,84 130,126 82,84" />
+    <!-- First chevron bar -->
+    <polygon points="62,100 76,88 130,136 184,88 198,100 130,160" />
+    <!-- Second chevron bar -->
+    <polygon points="40,120 54,108 130,174 206,108 220,120 130,198" />
+    <!-- Third chevron bar -->
+    <polygon points="18,140 32,128 130,212 228,128 242,140 130,236" />
+  </g>
+  <!-- Wordmark MUEBLERIA ALQUIA -->
+  <text
+    x="426"
+    y="118"
+    text-anchor="middle"
+    fill="#000000"
+    font-family="'Plus Jakarta Sans', 'DM Sans', 'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="800"
+    font-size="58"
+    letter-spacing="4"
+  >MUEBLERIA</text>
+  <text
+    x="426"
+    y="196"
+    text-anchor="middle"
+    fill="#000000"
+    font-family="'Plus Jakarta Sans', 'DM Sans', 'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="800"
+    font-size="58"
+    letter-spacing="5"
+  >ALQUIA</text>
+</svg>
