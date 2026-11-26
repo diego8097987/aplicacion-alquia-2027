@@ -1,0 +1,8 @@
+{
+  "appId": "mx.alquia.pos",
+  "appName": "Mueblería Alquia",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -72,7 +72,19 @@ export function LoginView() {
     }
   };
 
+  const isNativeApp =
+    typeof window !== 'undefined' &&
+    Boolean(
+      (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()
+    );
+
   const handleGoogle = async () => {
+    if (isNativeApp) {
+      setError(
+        'En la aplicación Android inicia sesión directamente con tu correo electrónico y contraseña.'
+      );
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -195,24 +207,28 @@ export function LoginView() {
             </p>
           </div>
 
-          {/* Botón Acceso con cuenta Google */}
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => void handleGoogle()}
-            className="alquia-gold-btn w-full py-3 rounded-xl text-sm font-extrabold flex items-center justify-center gap-2.5 disabled:opacity-60"
-          >
-            <LogIn className="w-4 h-4" />
-            Acceder con cuenta de Google
-          </button>
+          {!isNativeApp && (
+            <>
+              {/* Botón Acceso con cuenta Google */}
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => void handleGoogle()}
+                className="alquia-gold-btn w-full py-3 rounded-xl text-sm font-extrabold flex items-center justify-center gap-2.5 disabled:opacity-60"
+              >
+                <LogIn className="w-4 h-4" />
+                Acceder con cuenta de Google
+              </button>
 
-          <div className="relative flex items-center justify-center">
-            <div className="border-t border-zinc-200 dark:border-zinc-800 w-full" />
-            <span className="px-3 text-xs text-zinc-400 bg-white dark:bg-[#0B0B0D] shrink-0">
-              o con correo y contraseña
-            </span>
-            <div className="border-t border-zinc-200 dark:border-zinc-800 w-full" />
-          </div>
+              <div className="relative flex items-center justify-center">
+                <div className="border-t border-zinc-200 dark:border-zinc-800 w-full" />
+                <span className="px-3 text-xs text-zinc-400 bg-white dark:bg-[#0B0B0D] shrink-0">
+                  o con correo y contraseña
+                </span>
+                <div className="border-t border-zinc-200 dark:border-zinc-800 w-full" />
+              </div>
+            </>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (

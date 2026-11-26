@@ -663,6 +663,43 @@ export function createFullPageTicketPDFDoc(
  * Genera y descarga un comprobante profesional en hoja completa tamaño Carta (PDF)
  * con logo de Mueblería Alquia, detalle de la cuenta, dirección de sucursal y Encargado de tienda.
  */
+function saveOrSharePdf(doc: jsPDF, filename: string): void {
+  const cap =
+    typeof window !== 'undefined'
+      ? (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor
+      : undefined;
+
+  if (cap?.isNativePlatform?.()) {
+    void (async () => {
+      try {
+        const [{ Filesystem, Directory }, { Share }] = await Promise.all([
+          import('@capacitor/filesystem'),
+          import('@capacitor/share'),
+        ]);
+        const dataUri = doc.output('datauristring');
+        const base64Data = dataUri.includes(',') ? dataUri.split(',')[1] : dataUri;
+        const written = await Filesystem.writeFile({
+          path: filename,
+          data: base64Data,
+          directory: Directory.Cache,
+        });
+        await Share.share({
+          title: filename,
+          text: 'Comprobante digital — Mueblería Alquia',
+          url: written.uri,
+          dialogTitle: 'Guardar o compartir PDF',
+        });
+      } catch (err) {
+        console.error('Error al compartir PDF en Android:', err);
+        doc.save(filename);
+      }
+    })();
+    return;
+  }
+
+  doc.save(filename);
+}
+
 export function downloadFullPageTicketPDF(
   ticket: TicketData,
   config: Pick<ConfiguracionTienda, 'nombreComercial' | 'ubicacion' | 'telefono' | 'mensajeTicket'> & {
@@ -678,7 +715,7 @@ export function downloadFullPageTicketPDF(
     ticket.tipoDocumento === 'liquidacion_apartado'
       ? 'Recibo_Abono_Alquia'
       : 'Comprobante_Alquia';
-  doc.save(`${prefix}_${safeFolio}.pdf`);
+  saveOrSharePdf(doc, `${prefix}_${safeFolio}.pdf`);
 }
 
 /**
@@ -950,7 +987,7 @@ export function downloadCorteCajaPDF(params: {
   doc.text(`Recibe / Encargado: ${encargado}`, pageWidth - margin - 42, y + 5, { align: 'center' });
 
   const dateTag = nowISO.slice(0, 10);
-  doc.save(`Corte_Caja_Alquia_${dateTag}.pdf`);
+  saveOrSharePdf(doc, `Corte_Caja_Alquia_${dateTag}.pdf`);
 }
 
 /**
@@ -1127,5 +1164,5 @@ export function downloadInventarioPDF(params: {
   }
 
   const dateTag = nowISO.slice(0, 10);
-  doc.save(`Inventario_Alquia_${dateTag}.pdf`);
+  saveOrSharePdf(doc, `Inventario_Alquia_${dateTag}.pdf`);
 }
