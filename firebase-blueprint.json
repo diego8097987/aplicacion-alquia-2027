@@ -1,0 +1,567 @@
+{
+  "entities": {
+    "Configuracion": {
+      "title": "ConfiguracionTienda",
+      "description": "Configuración general del negocio, encabezados de comprobante, plantilla de correo automático para alertas y contadores de folios.",
+      "type": "object",
+      "properties": {
+        "nombreComercial": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "ubicacion": { "type": "string", "maxLength": 160 },
+        "telefono": { "type": "string", "maxLength": 40 },
+        "mensajeTicket": { "type": "string", "maxLength": 200 },
+        "correoAlertas": { "type": "string", "maxLength": 150 },
+        "diasAnticipacionAlerta": { "type": "number" },
+        "alertasAutomaticasActivas": { "type": "boolean" },
+        "plantillaAsuntoAlerta": { "type": "string", "maxLength": 180 },
+        "plantillaCuerpoAlerta": { "type": "string", "maxLength": 1200 },
+        "emailjsServiceId": { "type": "string", "maxLength": 80 },
+        "emailjsTemplateId": { "type": "string", "maxLength": 80 },
+        "emailjsPublicKey": { "type": "string", "maxLength": 80 },
+        "consecutivoVenta": { "type": "number" },
+        "consecutivoCredito": { "type": "number" },
+        "consecutivoApartado": { "type": "number" },
+        "consecutivoAbono": { "type": "number" },
+        "consecutivoCompra": { "type": "number" },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "actualizadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "nombreComercial",
+        "ubicacion",
+        "telefono",
+        "mensajeTicket",
+        "consecutivoVenta",
+        "consecutivoCredito",
+        "consecutivoApartado",
+        "consecutivoAbono",
+        "consecutivoCompra",
+        "tiendaId"
+      ]
+    },
+    "Usuario": {
+      "title": "Usuario",
+      "description": "Personal registrado en TITAN con cargo asignado por el Administrador (admin o cobrador) y sucursal privada asignada.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "nombre": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "correo": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "rol": { "type": "string", "enum": ["admin", "cobrador", "cajero"] },
+        "sucursalId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "activo": { "type": "boolean" },
+        "creadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "nombre", "correo", "rol", "activo", "creadoEn"]
+    },
+    "Sucursal": {
+      "title": "Sucursal",
+      "description": "Tienda / sucursal individual con su propia dirección para tickets, encargado de tienda designado por el Administrador y base privada de inventario.",
+      "type": "object",
+      "properties": {
+        "nombre": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "direccion": { "type": "string", "maxLength": 240 },
+        "telefono": { "type": "string", "maxLength": 40 },
+        "encargadoUid": { "type": "string", "maxLength": 128 },
+        "encargadoNombre": { "type": "string", "maxLength": 100 },
+        "propietarioUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "activa": { "type": "boolean" },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "creadoEn": { "type": "string", "format": "date-time" },
+        "actualizadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nombre", "direccion", "propietarioUid", "activa", "tiendaId", "creadoEn"]
+    },
+    "InventarioSucursal": {
+      "title": "InventarioSucursal",
+      "description": "Existencias privadas de un producto pertenecientes exclusivamente a una tienda/sucursal específica.",
+      "type": "object",
+      "properties": {
+        "sucursalId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "sucursalNombre": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "productoId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "propietarioUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "stockDisponible": { "type": "number" },
+        "stockReservado": { "type": "number" },
+        "stockMinimo": { "type": "number" },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "actualizadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "sucursalId",
+        "sucursalNombre",
+        "productoId",
+        "propietarioUid",
+        "stockDisponible",
+        "stockReservado",
+        "stockMinimo",
+        "tiendaId",
+        "actualizadoEn"
+      ]
+    },
+    "CajaTurno": {
+      "title": "CajaTurno",
+      "description": "Turnos de apertura y cierre de caja privados por personal/cobrador; los administradores pueden revisar y administrar los cortes de cada cobrador.",
+      "type": "object",
+      "properties": {
+        "sucursalId": { "type": "string", "maxLength": 128 },
+        "sucursalNombre": { "type": "string", "maxLength": 100 },
+        "sucursalDireccion": { "type": "string", "maxLength": 240 },
+        "encargadoTienda": { "type": "string", "maxLength": 100 },
+        "abiertaPorUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "abiertaPorNombre": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "fondoInicial": { "type": "number" },
+        "estado": { "type": "string", "enum": ["abierta", "cerrada"] },
+        "abiertaEn": { "type": "string", "format": "date-time" },
+        "cerradaEn": { "type": "string", "format": "date-time" },
+        "cerradaPorUid": { "type": "string", "maxLength": 128 },
+        "cerradaPorNombre": { "type": "string", "maxLength": 100 },
+        "totalVentasDia": { "type": "number" },
+        "totalAbonosDia": { "type": "number" },
+        "totalEfectivo": { "type": "number" },
+        "totalTarjeta": { "type": "number" },
+        "totalTransferencia": { "type": "number" },
+        "cantidadVentasBorradas": { "type": "number" },
+        "notasCierre": { "type": "string", "maxLength": 240 },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" }
+      },
+      "required": [
+        "abiertaPorUid",
+        "abiertaPorNombre",
+        "fondoInicial",
+        "estado",
+        "abiertaEn",
+        "tiendaId"
+      ]
+    },
+    "Cliente": {
+      "title": "Cliente",
+      "description": "Directorio de clientes con WhatsApp obligatorio para envío de comprobantes.",
+      "type": "object",
+      "properties": {
+        "nombre": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "telefono": { "type": "string", "minLength": 7, "maxLength": 30 },
+        "direccion": { "type": "string", "maxLength": 240 },
+        "referencias": { "type": "string", "maxLength": 240 },
+        "saldoAFavor": { "type": "number" },
+        "activo": { "type": "boolean" },
+        "creadoPorUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "creadoEn": { "type": "string", "format": "date-time" },
+        "actualizadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nombre", "telefono", "saldoAFavor", "activo", "creadoPorUid", "creadoEn", "tiendaId"]
+    },
+    "Proveedor": {
+      "title": "Proveedor",
+      "description": "Directorio de fabricantes y distribuidores de muebles.",
+      "type": "object",
+      "properties": {
+        "nombre": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "contacto": { "type": "string", "maxLength": 100 },
+        "telefono": { "type": "string", "minLength": 7, "maxLength": 30 },
+        "correo": { "type": "string", "maxLength": 150 },
+        "ciudad": { "type": "string", "maxLength": 100 },
+        "categorias": { "type": "string", "maxLength": 180 },
+        "notas": { "type": "string", "maxLength": 300 },
+        "activo": { "type": "boolean" },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "creadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nombre", "telefono", "activo", "creadoEn", "tiendaId"]
+    },
+    "Producto": {
+      "title": "Producto",
+      "description": "Catálogo de muebles con precios de contado, crédito/apartado y existencias. Todos los usuarios activos pueden agregar; solo Admin puede editar o eliminar.",
+      "type": "object",
+      "properties": {
+        "sku": { "type": "string", "minLength": 2, "maxLength": 40, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "nombre": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "categoria": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "marca": { "type": "string", "maxLength": 80 },
+        "precioContado": { "type": "number" },
+        "precioCredito": { "type": "number" },
+        "costoUnitario": { "type": "number" },
+        "stockDisponible": { "type": "number" },
+        "stockReservado": { "type": "number" },
+        "stockMinimo": { "type": "number" },
+        "proveedorId": { "type": "string", "maxLength": 128 },
+        "creadoPorUid": { "type": "string", "maxLength": 128 },
+        "creadoPorSucursalId": { "type": "string", "maxLength": 128 },
+        "activo": { "type": "boolean" },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "creadoEn": { "type": "string", "format": "date-time" },
+        "actualizadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "sku",
+        "nombre",
+        "categoria",
+        "precioContado",
+        "precioCredito",
+        "costoUnitario",
+        "stockDisponible",
+        "stockReservado",
+        "stockMinimo",
+        "activo",
+        "creadoEn",
+        "tiendaId"
+      ]
+    },
+    "Venta": {
+      "title": "Venta",
+      "description": "Registro de ventas del día/turno (se limpian al cerrar caja tras descargar el corte PDF).",
+      "type": "object",
+      "properties": {
+        "folio": { "type": "string", "minLength": 3, "maxLength": 32 },
+        "tipo": { "type": "string", "enum": ["contado", "credito", "apartado"] },
+        "clienteId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "clienteNombre": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "clienteTelefono": { "type": "string", "maxLength": 30 },
+        "sucursalId": { "type": "string", "maxLength": 128 },
+        "sucursalNombre": { "type": "string", "maxLength": 100 },
+        "sucursalDireccion": { "type": "string", "maxLength": 240 },
+        "encargadoTienda": { "type": "string", "maxLength": 100 },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "descuento": { "type": "number" },
+        "saldoAFavorAplicado": { "type": "number" },
+        "total": { "type": "number" },
+        "pagoInicial": { "type": "number" },
+        "metodoPago": { "type": "string", "enum": ["efectivo", "tarjeta", "transferencia"] },
+        "referenciaOperacionId": { "type": "string", "maxLength": 128 },
+        "referenciaFolio": { "type": "string", "maxLength": 32 },
+        "estado": { "type": "string", "enum": ["completada", "activa", "cancelada"] },
+        "vendedorUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "vendedorNombre": { "type": "string", "maxLength": 100 },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "creadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "folio",
+        "tipo",
+        "clienteId",
+        "clienteNombre",
+        "items",
+        "subtotal",
+        "descuento",
+        "saldoAFavorAplicado",
+        "total",
+        "pagoInicial",
+        "metodoPago",
+        "estado",
+        "vendedorUid",
+        "creadoEn",
+        "tiendaId"
+      ]
+    },
+    "Credito": {
+      "title": "Credito",
+      "description": "Cuentas de línea de crédito activas, liquidadas o canceladas. Solo Admin puede eliminar cuentas o aumentar pagos atrasados.",
+      "type": "object",
+      "properties": {
+        "folio": { "type": "string", "minLength": 3, "maxLength": 32 },
+        "ventaId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "clienteId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "clienteNombre": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "clienteTelefono": { "type": "string", "maxLength": 30 },
+        "sucursalId": { "type": "string", "maxLength": 128 },
+        "itemsResumen": { "type": "string", "maxLength": 240 },
+        "montoTotal": { "type": "number" },
+        "enganche": { "type": "number" },
+        "totalAbonado": { "type": "number" },
+        "saldoPendiente": { "type": "number" },
+        "frecuencia": { "type": "string", "enum": ["semanal", "quincenal", "mensual"] },
+        "numPagos": { "type": "number" },
+        "montoPago": { "type": "number" },
+        "pagosRealizados": { "type": "number" },
+        "proximaFechaPago": { "type": "string", "maxLength": 30 },
+        "recargosAcumulados": { "type": "number" },
+        "ultimoMotivoIncremento": { "type": "string", "maxLength": 240 },
+        "estado": { "type": "string", "enum": ["activo", "liquidado", "cancelado"] },
+        "vendedorUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "creadoEn": { "type": "string", "format": "date-time" },
+        "actualizadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "folio",
+        "ventaId",
+        "clienteId",
+        "clienteNombre",
+        "montoTotal",
+        "enganche",
+        "totalAbonado",
+        "saldoPendiente",
+        "frecuencia",
+        "numPagos",
+        "montoPago",
+        "pagosRealizados",
+        "proximaFechaPago",
+        "estado",
+        "vendedorUid",
+        "creadoEn",
+        "tiendaId"
+      ]
+    },
+    "Apartado": {
+      "title": "Apartado",
+      "description": "Apartados con reserva de stock, abonos progresivos y cancelaciones controladas.",
+      "type": "object",
+      "properties": {
+        "folio": { "type": "string", "minLength": 3, "maxLength": 32 },
+        "ventaId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "clienteId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "clienteNombre": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "clienteTelefono": { "type": "string", "maxLength": 30 },
+        "sucursalId": { "type": "string", "maxLength": 128 },
+        "items": { "type": "array" },
+        "montoTotal": { "type": "number" },
+        "anticipoInicial": { "type": "number" },
+        "totalAbonado": { "type": "number" },
+        "saldoPendiente": { "type": "number" },
+        "fechaLimite": { "type": "string", "maxLength": 30 },
+        "proximoPagoFecha": { "type": "string", "maxLength": 30 },
+        "recargosAcumulados": { "type": "number" },
+        "ultimoMotivoIncremento": { "type": "string", "maxLength": 240 },
+        "condiciones": { "type": "string", "maxLength": 300 },
+        "estado": { "type": "string", "enum": ["vigente", "liquidado", "cancelado"] },
+        "resolucionCancelacion": { "type": "string", "enum": ["ninguna", "reembolso", "saldo_a_favor", "penalizacion"] },
+        "montoRetenido": { "type": "number" },
+        "motivoCancelacion": { "type": "string", "maxLength": 240 },
+        "vendedorUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "creadoEn": { "type": "string", "format": "date-time" },
+        "actualizadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "folio",
+        "ventaId",
+        "clienteId",
+        "clienteNombre",
+        "items",
+        "montoTotal",
+        "anticipoInicial",
+        "totalAbonado",
+        "saldoPendiente",
+        "fechaLimite",
+        "estado",
+        "vendedorUid",
+        "creadoEn",
+        "tiendaId"
+      ]
+    },
+    "Abono": {
+      "title": "Abono",
+      "description": "Historial inmutable de pagos recibidos con control de puntualidad al día o atrasado.",
+      "type": "object",
+      "properties": {
+        "folio": { "type": "string", "minLength": 3, "maxLength": 32 },
+        "tipoOperacion": { "type": "string", "enum": ["credito", "apartado"] },
+        "operacionId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "operacionFolio": { "type": "string", "minLength": 3, "maxLength": 32 },
+        "clienteId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "clienteNombre": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "clienteTelefono": { "type": "string", "maxLength": 30 },
+        "monto": { "type": "number" },
+        "saldoAnterior": { "type": "number" },
+        "saldoNuevo": { "type": "number" },
+        "metodoPago": { "type": "string", "enum": ["efectivo", "tarjeta", "transferencia"] },
+        "fechaProgramada": { "type": "string", "maxLength": 30 },
+        "estadoPuntualidad": { "type": "string", "enum": ["al_dia", "atrasado"] },
+        "diasAtraso": { "type": "number" },
+        "notas": { "type": "string", "maxLength": 240 },
+        "sucursalId": { "type": "string", "maxLength": 128 },
+        "sucursalNombre": { "type": "string", "maxLength": 100 },
+        "cuentaSucursalId": { "type": "string", "maxLength": 128 },
+        "cuentaSucursalNombre": { "type": "string", "maxLength": 100 },
+        "enOtraTienda": { "type": "boolean" },
+        "cobradorUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "cobradorNombre": { "type": "string", "maxLength": 100 },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "creadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "folio",
+        "tipoOperacion",
+        "operacionId",
+        "operacionFolio",
+        "clienteId",
+        "clienteNombre",
+        "monto",
+        "saldoAnterior",
+        "saldoNuevo",
+        "metodoPago",
+        "cobradorUid",
+        "creadoEn",
+        "tiendaId"
+      ]
+    },
+    "AlertaVencimiento": {
+      "title": "AlertaVencimiento",
+      "description": "Alertas automáticas y manuales de pagos vencidos o próximos a vencer enviadas al correo del Administrador.",
+      "type": "object",
+      "properties": {
+        "operacionTipo": { "type": "string", "enum": ["credito", "apartado"] },
+        "operacionId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "operacionFolio": { "type": "string", "minLength": 3, "maxLength": 32 },
+        "tipoAlerta": { "type": "string", "enum": ["vencido", "por_vencer"] },
+        "claveAlerta": { "type": "string", "maxLength": 180 },
+        "clienteId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "clienteNombre": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "clienteTelefono": { "type": "string", "maxLength": 30 },
+        "montoAPagar": { "type": "number" },
+        "saldoPendiente": { "type": "number" },
+        "fechaLimite": { "type": "string", "maxLength": 30 },
+        "diasAtraso": { "type": "number" },
+        "diasRestantes": { "type": "number" },
+        "correoDestino": { "type": "string", "maxLength": 150 },
+        "asunto": { "type": "string", "maxLength": 220 },
+        "mensaje": { "type": "string", "maxLength": 1600 },
+        "metodoEnvio": { "type": "string", "enum": ["automatico_emailjs", "mailto", "registro_automatico"] },
+        "estado": { "type": "string", "enum": ["pendiente", "enviada"] },
+        "creadoPorUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "creadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "operacionTipo",
+        "operacionId",
+        "operacionFolio",
+        "clienteId",
+        "clienteNombre",
+        "montoAPagar",
+        "fechaLimite",
+        "diasAtraso",
+        "correoDestino",
+        "estado",
+        "creadoPorUid",
+        "creadoEn",
+        "tiendaId"
+      ]
+    },
+    "MovimientoInventario": {
+      "title": "MovimientoInventario",
+      "description": "Kardex inmutable de movimientos de inventario por sucursal.",
+      "type": "object",
+      "properties": {
+        "productoId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "productoSku": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "productoNombre": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "sucursalId": { "type": "string", "maxLength": 128 },
+        "sucursalNombre": { "type": "string", "maxLength": 100 },
+        "tipo": { "type": "string", "enum": ["compra", "venta", "apartado", "devolucion_apartado", "ajuste"] },
+        "cantidad": { "type": "number" },
+        "stockAnterior": { "type": "number" },
+        "stockNuevo": { "type": "number" },
+        "referenciaFolio": { "type": "string", "maxLength": 40 },
+        "motivo": { "type": "string", "maxLength": 240 },
+        "usuarioUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "usuarioNombre": { "type": "string", "maxLength": 100 },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "creadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "productoId",
+        "productoSku",
+        "productoNombre",
+        "tipo",
+        "cantidad",
+        "stockAnterior",
+        "stockNuevo",
+        "usuarioUid",
+        "creadoEn",
+        "tiendaId"
+      ]
+    },
+    "CompraProveedor": {
+      "title": "CompraProveedor",
+      "description": "Entradas de compra a proveedores vinculadas al inventario de sucursal.",
+      "type": "object",
+      "properties": {
+        "folio": { "type": "string", "minLength": 3, "maxLength": 32 },
+        "proveedorId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "proveedorNombre": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "sucursalId": { "type": "string", "maxLength": 128 },
+        "items": { "type": "array" },
+        "totalCosto": { "type": "number" },
+        "notas": { "type": "string", "maxLength": 240 },
+        "registradoPorUid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "registradoPorNombre": { "type": "string", "maxLength": 100 },
+        "tiendaId": { "type": "string", "pattern": "^alquia-apaseo$" },
+        "creadoEn": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "folio",
+        "proveedorId",
+        "proveedorNombre",
+        "items",
+        "totalCosto",
+        "registradoPorUid",
+        "creadoEn",
+        "tiendaId"
+      ]
+    }
+  },
+  "firestore": {
+    "/configuracion/{docId}": {
+      "schema": { "$ref": "#/entities/Configuracion" },
+      "description": "Configuración general de tienda, plantilla de alertas automáticas y consecutivos de folios."
+    },
+    "/usuarios/{userId}": {
+      "schema": { "$ref": "#/entities/Usuario" },
+      "description": "Usuarios registrados con su cargo asignado por el Admin (admin o cobrador) y su sucursal asignada."
+    },
+    "/sucursales/{sucursalId}": {
+      "schema": { "$ref": "#/entities/Sucursal" },
+      "description": "Tiendas/sucursales con dirección exclusiva para tickets y encargado de tienda asignado por el Admin."
+    },
+    "/inventario_sucursales/{invId}": {
+      "schema": { "$ref": "#/entities/InventarioSucursal" },
+      "description": "Base de datos privada de existencias de inventario por tienda/sucursal (estrictamente aislada por tienda)."
+    },
+    "/cajas_turnos/{turnoId}": {
+      "schema": { "$ref": "#/entities/CajaTurno" },
+      "description": "Turnos de apertura y cierre de caja privados por personal; visibles en auditoría para administradores."
+    },
+    "/clientes/{clienteId}": {
+      "schema": { "$ref": "#/entities/Cliente" },
+      "description": "Clientes de la tienda."
+    },
+    "/proveedores/{proveedorId}": {
+      "schema": { "$ref": "#/entities/Proveedor" },
+      "description": "Proveedores y fabricantes."
+    },
+    "/productos/{productoId}": {
+      "schema": { "$ref": "#/entities/Producto" },
+      "description": "Catálogo de productos (todos los usuarios activos pueden agregar; solo Admin puede editar o eliminar)."
+    },
+    "/ventas/{ventaId}": {
+      "schema": { "$ref": "#/entities/Venta" },
+      "description": "Ventas del día (se depuran al cerrar caja tras descargar el PDF diario)."
+    },
+    "/creditos/{creditoId}": {
+      "schema": { "$ref": "#/entities/Credito" },
+      "description": "Cartera de créditos (solo Admin puede eliminar cuentas o aumentar pagos atrasados)."
+    },
+    "/apartados/{apartadoId}": {
+      "schema": { "$ref": "#/entities/Apartado" },
+      "description": "Apartados vigentes y liquidados."
+    },
+    "/abonos/{abonoId}": {
+      "schema": { "$ref": "#/entities/Abono" },
+      "description": "Abonos inmutables de créditos y apartados."
+    },
+    "/alertas_vencimiento/{alertaId}": {
+      "schema": { "$ref": "#/entities/AlertaVencimiento" },
+      "description": "Registro deduplicado de alertas automáticas y manuales de pagos vencidos y próximos a vencer."
+    },
+    "/movimientos_inventario/{movId}": {
+      "schema": { "$ref": "#/entities/MovimientoInventario" },
+      "description": "Kardex de movimientos aislado por sucursal (solo Admin puede eliminar registros)."
+    },
+    "/compras_proveedores/{compraId}": {
+      "schema": { "$ref": "#/entities/CompraProveedor" },
+      "description": "Historial de compras a proveedores."
+    }
+  }
+}

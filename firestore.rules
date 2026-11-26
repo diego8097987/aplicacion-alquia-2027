@@ -1,0 +1,748 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Denegar todo por defecto
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------
+    // Primitivas globales de autenticación, identidad y esquemas
+    // ---------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isBootstrapAdmin() {
+      return isVerified() && request.auth.token.email == 'muebleriaalquia@gmail.com';
+    }
+
+    function hasUserDoc() {
+      return isVerified() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function currentUserDoc() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isBootstrapAdmin() || (
+        hasUserDoc() &&
+        currentUserDoc().activo == true &&
+        currentUserDoc().rol == 'admin'
+      );
+    }
+
+    function isStaff() {
+      return isAdmin() || (
+        hasUserDoc() &&
+        currentUserDoc().activo == true &&
+        currentUserDoc().rol in ['admin', 'cobrador', 'cajero']
+      );
+    }
+
+    function defaultPersonalSucursalId() {
+      return 'suc-' + (request.auth.uid.size() >= 24 ? request.auth.uid[0:24] : request.auth.uid);
+    }
+
+    function effectiveUserSucursalId() {
+      return ('sucursalId' in currentUserDoc() && currentUserDoc().sucursalId is string && currentUserDoc().sucursalId.size() > 0)
+        ? currentUserDoc().sucursalId
+        : defaultPersonalSucursalId();
+    }
+
+    function isOwnSucursal(sucursalId) {
+      return isAdmin() || (
+        hasUserDoc() &&
+        currentUserDoc().activo == true &&
+        effectiveUserSucursalId() == sucursalId
+      );
+    }
+
+    // ---------------------------------------------------------
+    // Validadores por entidad (Validation Blueprints)
+    // ---------------------------------------------------------
+    function isValidConfiguracion(data) {
+      return data.keys().hasAll([
+          'nombreComercial',
+          'ubicacion',
+          'telefono',
+          'mensajeTicket',
+          'consecutivoVenta',
+          'consecutivoCredito',
+          'consecutivoApartado',
+          'consecutivoAbono',
+          'consecutivoCompra',
+          'tiendaId'
+        ]) &&
+        data.keys().hasOnly([
+          'nombreComercial',
+          'ubicacion',
+          'telefono',
+          'mensajeTicket',
+          'correoAlertas',
+          'diasAnticipacionAlerta',
+          'alertasAutomaticasActivas',
+          'plantillaAsuntoAlerta',
+          'plantillaCuerpoAlerta',
+          'emailjsServiceId',
+          'emailjsTemplateId',
+          'emailjsPublicKey',
+          'adminPin',
+          'consecutivoVenta',
+          'consecutivoCredito',
+          'consecutivoApartado',
+          'consecutivoAbono',
+          'consecutivoCompra',
+          'actualizadoEn',
+          'tiendaId'
+        ]) &&
+        data.nombreComercial is string && data.nombreComercial.size() >= 2 && data.nombreComercial.size() <= 120 &&
+        data.ubicacion is string && data.ubicacion.size() <= 160 &&
+        data.telefono is string && data.telefono.size() <= 40 &&
+        data.mensajeTicket is string && data.mensajeTicket.size() <= 200 &&
+        (!('correoAlertas' in data) || (data.correoAlertas is string && data.correoAlertas.size() <= 150)) &&
+        (!('diasAnticipacionAlerta' in data) || (data.diasAnticipacionAlerta is number && data.diasAnticipacionAlerta >= 0 && data.diasAnticipacionAlerta <= 30)) &&
+        (!('alertasAutomaticasActivas' in data) || data.alertasAutomaticasActivas is bool) &&
+        (!('plantillaAsuntoAlerta' in data) || (data.plantillaAsuntoAlerta is string && data.plantillaAsuntoAlerta.size() <= 180)) &&
+        (!('plantillaCuerpoAlerta' in data) || (data.plantillaCuerpoAlerta is string && data.plantillaCuerpoAlerta.size() <= 1200)) &&
+        (!('emailjsServiceId' in data) || (data.emailjsServiceId is string && data.emailjsServiceId.size() <= 80)) &&
+        (!('emailjsTemplateId' in data) || (data.emailjsTemplateId is string && data.emailjsTemplateId.size() <= 80)) &&
+        (!('emailjsPublicKey' in data) || (data.emailjsPublicKey is string && data.emailjsPublicKey.size() <= 80)) &&
+        (!('adminPin' in data) || (data.adminPin is string && data.adminPin.size() <= 32)) &&
+        data.consecutivoVenta is number && data.consecutivoVenta >= 0 &&
+        data.consecutivoCredito is number && data.consecutivoCredito >= 0 &&
+        data.consecutivoApartado is number && data.consecutivoApartado >= 0 &&
+        data.consecutivoAbono is number && data.consecutivoAbono >= 0 &&
+        data.consecutivoCompra is number && data.consecutivoCompra >= 0 &&
+        data.tiendaId == 'alquia-apaseo';
+    }
+
+    function isValidUsuario(data) {
+      return data.keys().hasAll(['uid', 'nombre', 'correo', 'rol', 'activo', 'creadoEn']) &&
+        data.keys().hasOnly(['uid', 'nombre', 'correo', 'rol', 'sucursalId', 'activo', 'creadoEn']) &&
+        isValidId(data.uid) &&
+        data.nombre is string && data.nombre.size() >= 1 && data.nombre.size() <= 100 &&
+        data.correo is string && data.correo.size() >= 3 && data.correo.size() <= 150 &&
+        data.rol in ['admin', 'cobrador', 'cajero'] &&
+        (!('sucursalId' in data) || isValidId(data.sucursalId)) &&
+        data.activo is bool &&
+        data.creadoEn is timestamp;
+    }
+
+    function isValidSucursal(data) {
+      return data.keys().hasAll(['nombre', 'direccion', 'propietarioUid', 'activa', 'tiendaId', 'creadoEn']) &&
+        data.keys().hasOnly(['nombre', 'direccion', 'telefono', 'encargadoUid', 'encargadoNombre', 'propietarioUid', 'activa', 'tiendaId', 'creadoEn', 'actualizadoEn']) &&
+        data.nombre is string && data.nombre.size() >= 2 && data.nombre.size() <= 100 &&
+        data.direccion is string && data.direccion.size() <= 240 &&
+        (!('telefono' in data) || (data.telefono is string && data.telefono.size() <= 40)) &&
+        (!('encargadoUid' in data) || (data.encargadoUid is string && data.encargadoUid.size() <= 128)) &&
+        (!('encargadoNombre' in data) || (data.encargadoNombre is string && data.encargadoNombre.size() <= 100)) &&
+        isValidId(data.propietarioUid) &&
+        data.activa is bool &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.creadoEn is timestamp;
+    }
+
+    function isValidInventarioSucursal(data) {
+      return data.keys().hasAll(['sucursalId', 'sucursalNombre', 'productoId', 'propietarioUid', 'stockDisponible', 'stockReservado', 'stockMinimo', 'tiendaId', 'actualizadoEn']) &&
+        data.keys().hasOnly(['sucursalId', 'sucursalNombre', 'productoId', 'propietarioUid', 'stockDisponible', 'stockReservado', 'stockMinimo', 'tiendaId', 'actualizadoEn']) &&
+        isValidId(data.sucursalId) &&
+        data.sucursalNombre is string && data.sucursalNombre.size() >= 1 && data.sucursalNombre.size() <= 100 &&
+        isValidId(data.productoId) &&
+        isValidId(data.propietarioUid) &&
+        data.stockDisponible is number && data.stockDisponible >= 0 && data.stockDisponible <= 100000 &&
+        data.stockReservado is number && data.stockReservado >= 0 && data.stockReservado <= 100000 &&
+        data.stockMinimo is number && data.stockMinimo >= 0 && data.stockMinimo <= 10000 &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.actualizadoEn is timestamp;
+    }
+
+    function isValidCajaTurno(data) {
+      return data.keys().hasAll(['abiertaPorUid', 'abiertaPorNombre', 'fondoInicial', 'estado', 'abiertaEn', 'tiendaId']) &&
+        data.keys().hasOnly([
+          'sucursalId',
+          'sucursalNombre',
+          'sucursalDireccion',
+          'encargadoTienda',
+          'abiertaPorUid',
+          'abiertaPorNombre',
+          'fondoInicial',
+          'estado',
+          'abiertaEn',
+          'cerradaEn',
+          'cerradaPorUid',
+          'cerradaPorNombre',
+          'totalVentasDia',
+          'totalAbonosDia',
+          'totalEfectivo',
+          'totalTarjeta',
+          'totalTransferencia',
+          'cantidadVentasBorradas',
+          'notasCierre',
+          'tiendaId'
+        ]) &&
+        (!('sucursalId' in data) || (data.sucursalId is string && data.sucursalId.size() <= 128)) &&
+        (!('sucursalNombre' in data) || (data.sucursalNombre is string && data.sucursalNombre.size() <= 100)) &&
+        (!('sucursalDireccion' in data) || (data.sucursalDireccion is string && data.sucursalDireccion.size() <= 240)) &&
+        (!('encargadoTienda' in data) || (data.encargadoTienda is string && data.encargadoTienda.size() <= 100)) &&
+        isValidId(data.abiertaPorUid) &&
+        data.abiertaPorNombre is string && data.abiertaPorNombre.size() >= 1 && data.abiertaPorNombre.size() <= 100 &&
+        data.fondoInicial is number && data.fondoInicial >= 0 && data.fondoInicial <= 5000000 &&
+        data.estado in ['abierta', 'cerrada'] &&
+        data.abiertaEn is timestamp &&
+        (!('cerradaEn' in data) || data.cerradaEn is timestamp) &&
+        (!('cerradaPorUid' in data) || isValidId(data.cerradaPorUid)) &&
+        (!('cerradaPorNombre' in data) || (data.cerradaPorNombre is string && data.cerradaPorNombre.size() <= 100)) &&
+        (!('totalVentasDia' in data) || (data.totalVentasDia is number && data.totalVentasDia >= 0)) &&
+        (!('totalAbonosDia' in data) || (data.totalAbonosDia is number && data.totalAbonosDia >= 0)) &&
+        (!('totalEfectivo' in data) || (data.totalEfectivo is number && data.totalEfectivo >= 0)) &&
+        (!('totalTarjeta' in data) || (data.totalTarjeta is number && data.totalTarjeta >= 0)) &&
+        (!('totalTransferencia' in data) || (data.totalTransferencia is number && data.totalTransferencia >= 0)) &&
+        (!('cantidadVentasBorradas' in data) || (data.cantidadVentasBorradas is number && data.cantidadVentasBorradas >= 0)) &&
+        (!('notasCierre' in data) || (data.notasCierre is string && data.notasCierre.size() <= 240)) &&
+        data.tiendaId == 'alquia-apaseo';
+    }
+
+    function isValidCliente(data) {
+      return data.keys().hasAll(['nombre', 'telefono', 'saldoAFavor', 'activo', 'creadoPorUid', 'creadoEn', 'tiendaId']) &&
+        data.keys().hasOnly(['nombre', 'telefono', 'direccion', 'referencias', 'saldoAFavor', 'activo', 'creadoPorUid', 'creadoEn', 'actualizadoEn', 'tiendaId']) &&
+        data.nombre is string && data.nombre.size() >= 2 && data.nombre.size() <= 120 &&
+        data.telefono is string && data.telefono.size() >= 7 && data.telefono.size() <= 30 &&
+        (!('direccion' in data) || (data.direccion is string && data.direccion.size() <= 240)) &&
+        (!('referencias' in data) || (data.referencias is string && data.referencias.size() <= 240)) &&
+        data.saldoAFavor is number && data.saldoAFavor >= 0 && data.saldoAFavor <= 1000000 &&
+        data.activo is bool &&
+        isValidId(data.creadoPorUid) &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.creadoEn is timestamp;
+    }
+
+    function isValidProveedor(data) {
+      return data.keys().hasAll(['nombre', 'telefono', 'activo', 'creadoEn', 'tiendaId']) &&
+        data.keys().hasOnly(['nombre', 'contacto', 'telefono', 'correo', 'ciudad', 'categorias', 'notas', 'activo', 'creadoEn', 'tiendaId']) &&
+        data.nombre is string && data.nombre.size() >= 2 && data.nombre.size() <= 120 &&
+        (!('contacto' in data) || (data.contacto is string && data.contacto.size() <= 100)) &&
+        data.telefono is string && data.telefono.size() >= 7 && data.telefono.size() <= 30 &&
+        (!('correo' in data) || (data.correo is string && data.correo.size() <= 150)) &&
+        (!('ciudad' in data) || (data.ciudad is string && data.ciudad.size() <= 100)) &&
+        (!('categorias' in data) || (data.categorias is string && data.categorias.size() <= 180)) &&
+        (!('notas' in data) || (data.notas is string && data.notas.size() <= 300)) &&
+        data.activo is bool &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.creadoEn is timestamp;
+    }
+
+    function isValidProducto(data) {
+      return data.keys().hasAll(['sku', 'nombre', 'categoria', 'precioContado', 'precioCredito', 'costoUnitario', 'stockDisponible', 'stockReservado', 'stockMinimo', 'activo', 'creadoEn', 'tiendaId']) &&
+        data.keys().hasOnly(['sku', 'nombre', 'categoria', 'marca', 'precioContado', 'precioCredito', 'costoUnitario', 'stockDisponible', 'stockReservado', 'stockMinimo', 'proveedorId', 'creadoPorUid', 'creadoPorSucursalId', 'activo', 'creadoEn', 'actualizadoEn', 'tiendaId']) &&
+        data.sku is string && data.sku.size() >= 2 && data.sku.size() <= 40 && data.sku.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.nombre is string && data.nombre.size() >= 2 && data.nombre.size() <= 140 &&
+        data.categoria is string && data.categoria.size() >= 2 && data.categoria.size() <= 60 &&
+        (!('marca' in data) || (data.marca is string && data.marca.size() <= 80)) &&
+        data.precioContado is number && data.precioContado >= 0 && data.precioContado <= 5000000 &&
+        data.precioCredito is number && data.precioCredito >= 0 && data.precioCredito <= 5000000 &&
+        data.costoUnitario is number && data.costoUnitario >= 0 && data.costoUnitario <= 5000000 &&
+        data.stockDisponible is number && data.stockDisponible >= 0 && data.stockDisponible <= 100000 &&
+        data.stockReservado is number && data.stockReservado >= 0 && data.stockReservado <= 100000 &&
+        data.stockMinimo is number && data.stockMinimo >= 0 && data.stockMinimo <= 10000 &&
+        (!('proveedorId' in data) || (data.proveedorId is string && data.proveedorId.size() <= 128)) &&
+        (!('creadoPorUid' in data) || isValidId(data.creadoPorUid)) &&
+        (!('creadoPorSucursalId' in data) || isValidId(data.creadoPorSucursalId)) &&
+        data.activo is bool &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.creadoEn is timestamp;
+    }
+
+    function isValidVenta(data) {
+      return data.keys().hasAll(['folio', 'tipo', 'clienteId', 'clienteNombre', 'items', 'subtotal', 'descuento', 'saldoAFavorAplicado', 'total', 'pagoInicial', 'metodoPago', 'estado', 'vendedorUid', 'creadoEn', 'tiendaId']) &&
+        data.keys().hasOnly(['folio', 'tipo', 'clienteId', 'clienteNombre', 'clienteTelefono', 'sucursalId', 'sucursalNombre', 'sucursalDireccion', 'encargadoTienda', 'items', 'subtotal', 'descuento', 'saldoAFavorAplicado', 'total', 'pagoInicial', 'metodoPago', 'referenciaOperacionId', 'referenciaFolio', 'estado', 'vendedorUid', 'vendedorNombre', 'creadoEn', 'tiendaId']) &&
+        data.folio is string && data.folio.size() >= 3 && data.folio.size() <= 32 &&
+        data.tipo in ['contado', 'credito', 'apartado'] &&
+        isValidId(data.clienteId) &&
+        data.clienteNombre is string && data.clienteNombre.size() >= 1 && data.clienteNombre.size() <= 120 &&
+        (!('clienteTelefono' in data) || (data.clienteTelefono is string && data.clienteTelefono.size() <= 30)) &&
+        (!('sucursalId' in data) || (data.sucursalId is string && data.sucursalId.size() <= 128)) &&
+        (!('sucursalNombre' in data) || (data.sucursalNombre is string && data.sucursalNombre.size() <= 100)) &&
+        (!('sucursalDireccion' in data) || (data.sucursalDireccion is string && data.sucursalDireccion.size() <= 240)) &&
+        (!('encargadoTienda' in data) || (data.encargadoTienda is string && data.encargadoTienda.size() <= 100)) &&
+        data.items is list && data.items.size() >= 1 && data.items.size() <= 30 &&
+        data.subtotal is number && data.subtotal >= 0 &&
+        data.descuento is number && data.descuento >= 0 &&
+        data.saldoAFavorAplicado is number && data.saldoAFavorAplicado >= 0 &&
+        data.total is number && data.total >= 0 &&
+        data.pagoInicial is number && data.pagoInicial >= 0 &&
+        data.metodoPago in ['efectivo', 'tarjeta', 'transferencia'] &&
+        (!('referenciaOperacionId' in data) || (data.referenciaOperacionId is string && data.referenciaOperacionId.size() <= 128)) &&
+        (!('referenciaFolio' in data) || (data.referenciaFolio is string && data.referenciaFolio.size() <= 32)) &&
+        data.estado in ['completada', 'activa', 'cancelada'] &&
+        isValidId(data.vendedorUid) &&
+        (!('vendedorNombre' in data) || (data.vendedorNombre is string && data.vendedorNombre.size() <= 100)) &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.creadoEn is timestamp;
+    }
+
+    function isValidCredito(data) {
+      return data.keys().hasAll(['folio', 'ventaId', 'clienteId', 'clienteNombre', 'montoTotal', 'enganche', 'totalAbonado', 'saldoPendiente', 'frecuencia', 'numPagos', 'montoPago', 'pagosRealizados', 'proximaFechaPago', 'estado', 'vendedorUid', 'creadoEn', 'tiendaId']) &&
+        data.keys().hasOnly(['folio', 'ventaId', 'clienteId', 'clienteNombre', 'clienteTelefono', 'sucursalId', 'itemsResumen', 'montoTotal', 'enganche', 'totalAbonado', 'saldoPendiente', 'frecuencia', 'numPagos', 'montoPago', 'pagosRealizados', 'proximaFechaPago', 'recargosAcumulados', 'ultimoMotivoIncremento', 'estado', 'vendedorUid', 'creadoEn', 'actualizadoEn', 'tiendaId']) &&
+        data.folio is string && data.folio.size() >= 3 && data.folio.size() <= 32 &&
+        isValidId(data.ventaId) &&
+        isValidId(data.clienteId) &&
+        data.clienteNombre is string && data.clienteNombre.size() >= 1 && data.clienteNombre.size() <= 120 &&
+        (!('clienteTelefono' in data) || (data.clienteTelefono is string && data.clienteTelefono.size() <= 30)) &&
+        (!('sucursalId' in data) || (data.sucursalId is string && data.sucursalId.size() <= 128)) &&
+        (!('itemsResumen' in data) || (data.itemsResumen is string && data.itemsResumen.size() <= 240)) &&
+        data.montoTotal is number && data.montoTotal > 0 &&
+        data.enganche is number && data.enganche >= 0 &&
+        data.totalAbonado is number && data.totalAbonado >= 0 &&
+        data.saldoPendiente is number && data.saldoPendiente >= 0 &&
+        data.frecuencia in ['semanal', 'quincenal', 'mensual'] &&
+        data.numPagos is number && data.numPagos >= 1 && data.numPagos <= 120 &&
+        data.montoPago is number && data.montoPago > 0 &&
+        data.pagosRealizados is number && data.pagosRealizados >= 0 &&
+        data.proximaFechaPago is string && data.proximaFechaPago.size() <= 30 &&
+        (!('recargosAcumulados' in data) || (data.recargosAcumulados is number && data.recargosAcumulados >= 0)) &&
+        (!('ultimoMotivoIncremento' in data) || (data.ultimoMotivoIncremento is string && data.ultimoMotivoIncremento.size() <= 240)) &&
+        data.estado in ['activo', 'liquidado', 'cancelado'] &&
+        isValidId(data.vendedorUid) &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.creadoEn is timestamp;
+    }
+
+    function isValidApartado(data) {
+      return data.keys().hasAll(['folio', 'ventaId', 'clienteId', 'clienteNombre', 'items', 'montoTotal', 'anticipoInicial', 'totalAbonado', 'saldoPendiente', 'fechaLimite', 'estado', 'vendedorUid', 'creadoEn', 'tiendaId']) &&
+        data.keys().hasOnly(['folio', 'ventaId', 'clienteId', 'clienteNombre', 'clienteTelefono', 'sucursalId', 'items', 'montoTotal', 'anticipoInicial', 'totalAbonado', 'saldoPendiente', 'fechaLimite', 'proximoPagoFecha', 'recargosAcumulados', 'ultimoMotivoIncremento', 'condiciones', 'estado', 'resolucionCancelacion', 'montoRetenido', 'motivoCancelacion', 'vendedorUid', 'creadoEn', 'actualizadoEn', 'tiendaId']) &&
+        data.folio is string && data.folio.size() >= 3 && data.folio.size() <= 32 &&
+        isValidId(data.ventaId) &&
+        isValidId(data.clienteId) &&
+        data.clienteNombre is string && data.clienteNombre.size() >= 1 && data.clienteNombre.size() <= 120 &&
+        (!('clienteTelefono' in data) || (data.clienteTelefono is string && data.clienteTelefono.size() <= 30)) &&
+        (!('sucursalId' in data) || (data.sucursalId is string && data.sucursalId.size() <= 128)) &&
+        data.items is list && data.items.size() >= 1 && data.items.size() <= 30 &&
+        data.montoTotal is number && data.montoTotal > 0 &&
+        data.anticipoInicial is number && data.anticipoInicial >= 0 &&
+        data.totalAbonado is number && data.totalAbonado >= 0 &&
+        data.saldoPendiente is number && data.saldoPendiente >= 0 &&
+        data.fechaLimite is string && data.fechaLimite.size() <= 30 &&
+        (!('proximoPagoFecha' in data) || (data.proximoPagoFecha is string && data.proximoPagoFecha.size() <= 30)) &&
+        (!('recargosAcumulados' in data) || (data.recargosAcumulados is number && data.recargosAcumulados >= 0)) &&
+        (!('ultimoMotivoIncremento' in data) || (data.ultimoMotivoIncremento is string && data.ultimoMotivoIncremento.size() <= 240)) &&
+        (!('condiciones' in data) || (data.condiciones is string && data.condiciones.size() <= 300)) &&
+        data.estado in ['vigente', 'liquidado', 'cancelado'] &&
+        (!('resolucionCancelacion' in data) || data.resolucionCancelacion in ['ninguna', 'reembolso', 'saldo_a_favor', 'penalizacion']) &&
+        (!('montoRetenido' in data) || (data.montoRetenido is number && data.montoRetenido >= 0)) &&
+        (!('motivoCancelacion' in data) || (data.motivoCancelacion is string && data.motivoCancelacion.size() <= 240)) &&
+        isValidId(data.vendedorUid) &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.creadoEn is timestamp;
+    }
+
+    function isValidAbono(data) {
+      return data.keys().hasAll(['folio', 'tipoOperacion', 'operacionId', 'operacionFolio', 'clienteId', 'clienteNombre', 'monto', 'saldoAnterior', 'saldoNuevo', 'metodoPago', 'cobradorUid', 'creadoEn', 'tiendaId']) &&
+        data.keys().hasOnly(['folio', 'tipoOperacion', 'operacionId', 'operacionFolio', 'clienteId', 'clienteNombre', 'clienteTelefono', 'monto', 'saldoAnterior', 'saldoNuevo', 'metodoPago', 'fechaProgramada', 'estadoPuntualidad', 'diasAtraso', 'notas', 'sucursalId', 'sucursalNombre', 'cuentaSucursalId', 'cuentaSucursalNombre', 'enOtraTienda', 'cobradorUid', 'cobradorNombre', 'creadoEn', 'tiendaId']) &&
+        data.folio is string && data.folio.size() >= 3 && data.folio.size() <= 32 &&
+        data.tipoOperacion in ['credito', 'apartado'] &&
+        isValidId(data.operacionId) &&
+        data.operacionFolio is string && data.operacionFolio.size() >= 3 && data.operacionFolio.size() <= 32 &&
+        isValidId(data.clienteId) &&
+        data.clienteNombre is string && data.clienteNombre.size() >= 1 && data.clienteNombre.size() <= 120 &&
+        (!('clienteTelefono' in data) || (data.clienteTelefono is string && data.clienteTelefono.size() <= 30)) &&
+        data.monto is number && data.monto > 0 &&
+        data.saldoAnterior is number && data.saldoAnterior >= 0 &&
+        data.saldoNuevo is number && data.saldoNuevo >= 0 &&
+        data.metodoPago in ['efectivo', 'tarjeta', 'transferencia'] &&
+        (!('fechaProgramada' in data) || (data.fechaProgramada is string && data.fechaProgramada.size() <= 30)) &&
+        (!('estadoPuntualidad' in data) || data.estadoPuntualidad in ['al_dia', 'atrasado']) &&
+        (!('diasAtraso' in data) || (data.diasAtraso is number && data.diasAtraso >= 0)) &&
+        (!('notas' in data) || (data.notas is string && data.notas.size() <= 240)) &&
+        (!('sucursalId' in data) || (data.sucursalId is string && data.sucursalId.size() <= 128)) &&
+        (!('sucursalNombre' in data) || (data.sucursalNombre is string && data.sucursalNombre.size() <= 100)) &&
+        (!('cuentaSucursalId' in data) || (data.cuentaSucursalId is string && data.cuentaSucursalId.size() <= 128)) &&
+        (!('cuentaSucursalNombre' in data) || (data.cuentaSucursalNombre is string && data.cuentaSucursalNombre.size() <= 100)) &&
+        (!('enOtraTienda' in data) || data.enOtraTienda is bool) &&
+        isValidId(data.cobradorUid) &&
+        (!('cobradorNombre' in data) || (data.cobradorNombre is string && data.cobradorNombre.size() <= 100)) &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.creadoEn is timestamp;
+    }
+
+    function isValidAlertaVencimiento(data) {
+      return data.keys().hasAll(['operacionTipo', 'operacionId', 'operacionFolio', 'clienteId', 'clienteNombre', 'montoAPagar', 'fechaLimite', 'diasAtraso', 'correoDestino', 'estado', 'creadoPorUid', 'creadoEn', 'tiendaId']) &&
+        data.keys().hasOnly(['operacionTipo', 'operacionId', 'operacionFolio', 'tipoAlerta', 'claveAlerta', 'clienteId', 'clienteNombre', 'clienteTelefono', 'montoAPagar', 'saldoPendiente', 'fechaLimite', 'diasAtraso', 'diasRestantes', 'correoDestino', 'asunto', 'mensaje', 'metodoEnvio', 'estado', 'creadoPorUid', 'creadoEn', 'tiendaId']) &&
+        data.operacionTipo in ['credito', 'apartado'] &&
+        isValidId(data.operacionId) &&
+        data.operacionFolio is string && data.operacionFolio.size() >= 3 && data.operacionFolio.size() <= 32 &&
+        (!('tipoAlerta' in data) || data.tipoAlerta in ['vencido', 'por_vencer']) &&
+        (!('claveAlerta' in data) || (data.claveAlerta is string && data.claveAlerta.size() <= 180)) &&
+        isValidId(data.clienteId) &&
+        data.clienteNombre is string && data.clienteNombre.size() >= 1 && data.clienteNombre.size() <= 120 &&
+        (!('clienteTelefono' in data) || (data.clienteTelefono is string && data.clienteTelefono.size() <= 30)) &&
+        data.montoAPagar is number && data.montoAPagar >= 0 &&
+        (!('saldoPendiente' in data) || (data.saldoPendiente is number && data.saldoPendiente >= 0)) &&
+        data.fechaLimite is string && data.fechaLimite.size() <= 30 &&
+        data.diasAtraso is number && data.diasAtraso >= 0 &&
+        (!('diasRestantes' in data) || (data.diasRestantes is number && data.diasRestantes >= 0)) &&
+        data.correoDestino is string && data.correoDestino.size() <= 150 &&
+        (!('asunto' in data) || (data.asunto is string && data.asunto.size() <= 220)) &&
+        (!('mensaje' in data) || (data.mensaje is string && data.mensaje.size() <= 1600)) &&
+        (!('metodoEnvio' in data) || data.metodoEnvio in ['automatico_emailjs', 'mailto', 'registro_automatico']) &&
+        data.estado in ['pendiente', 'enviada'] &&
+        isValidId(data.creadoPorUid) &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.creadoEn is timestamp;
+    }
+
+    function isValidMovimiento(data) {
+      return data.keys().hasAll(['productoId', 'productoSku', 'productoNombre', 'tipo', 'cantidad', 'stockAnterior', 'stockNuevo', 'usuarioUid', 'creadoEn', 'tiendaId']) &&
+        data.keys().hasOnly(['productoId', 'productoSku', 'productoNombre', 'sucursalId', 'sucursalNombre', 'tipo', 'cantidad', 'stockAnterior', 'stockNuevo', 'referenciaFolio', 'motivo', 'usuarioUid', 'usuarioNombre', 'creadoEn', 'tiendaId']) &&
+        isValidId(data.productoId) &&
+        data.productoSku is string && data.productoSku.size() >= 2 && data.productoSku.size() <= 40 &&
+        data.productoNombre is string && data.productoNombre.size() >= 2 && data.productoNombre.size() <= 140 &&
+        (!('sucursalId' in data) || (data.sucursalId is string && data.sucursalId.size() <= 128)) &&
+        (!('sucursalNombre' in data) || (data.sucursalNombre is string && data.sucursalNombre.size() <= 100)) &&
+        data.tipo in ['compra', 'venta', 'apartado', 'devolucion_apartado', 'ajuste'] &&
+        data.cantidad is number &&
+        data.stockAnterior is number && data.stockAnterior >= 0 &&
+        data.stockNuevo is number && data.stockNuevo >= 0 &&
+        (!('referenciaFolio' in data) || (data.referenciaFolio is string && data.referenciaFolio.size() <= 40)) &&
+        (!('motivo' in data) || (data.motivo is string && data.motivo.size() <= 240)) &&
+        isValidId(data.usuarioUid) &&
+        (!('usuarioNombre' in data) || (data.usuarioNombre is string && data.usuarioNombre.size() <= 100)) &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.creadoEn is timestamp;
+    }
+
+    function isValidCompraProveedor(data) {
+      return data.keys().hasAll(['folio', 'proveedorId', 'proveedorNombre', 'items', 'totalCosto', 'registradoPorUid', 'creadoEn', 'tiendaId']) &&
+        data.keys().hasOnly(['folio', 'proveedorId', 'proveedorNombre', 'sucursalId', 'items', 'totalCosto', 'notas', 'registradoPorUid', 'registradoPorNombre', 'creadoEn', 'tiendaId']) &&
+        data.folio is string && data.folio.size() >= 3 && data.folio.size() <= 32 &&
+        isValidId(data.proveedorId) &&
+        data.proveedorNombre is string && data.proveedorNombre.size() >= 2 && data.proveedorNombre.size() <= 120 &&
+        (!('sucursalId' in data) || (data.sucursalId is string && data.sucursalId.size() <= 128)) &&
+        data.items is list && data.items.size() >= 1 && data.items.size() <= 30 &&
+        data.totalCosto is number && data.totalCosto >= 0 &&
+        (!('notas' in data) || (data.notas is string && data.notas.size() <= 240)) &&
+        isValidId(data.registradoPorUid) &&
+        (!('registradoPorNombre' in data) || (data.registradoPorNombre is string && data.registradoPorNombre.size() <= 100)) &&
+        data.tiendaId == 'alquia-apaseo' &&
+        data.creadoEn is timestamp;
+    }
+
+    // ---------------------------------------------------------
+    // Reglas por colección
+    // ---------------------------------------------------------
+    match /configuracion/{docId} {
+      allow get: if isValidId(docId) && isStaff();
+      allow create: if isValidId(docId) && docId == 'tienda' && isStaff() && isValidConfiguracion(incoming());
+      allow update: if isValidId(docId) && docId == 'tienda' && isValidConfiguracion(incoming()) &&
+        incoming().tiendaId == existing().tiendaId &&
+        (
+          isAdmin() ||
+          (isStaff() && incoming().diff(existing()).affectedKeys().hasOnly([
+            'consecutivoVenta',
+            'consecutivoCredito',
+            'consecutivoApartado',
+            'consecutivoAbono',
+            'consecutivoCompra',
+            'actualizadoEn'
+          ]))
+        );
+      allow delete: if false;
+    }
+
+    // Usuarios: cada usuario nuevo verificado puede registrar su propio perfil como 'cobrador' (nunca auto-asignarse 'admin');
+    // solo el Administrador puede cambiar cargos ('admin' / 'cobrador'), asignar sucursal y activar/desactivar.
+    match /usuarios/{userId} {
+      allow get: if isValidId(userId) && (isAdmin() || (isSignedIn() && request.auth.uid == userId));
+      allow list: if isAdmin() && resource.data.rol in ['admin', 'cobrador', 'cajero'];
+      allow create: if isValidId(userId) && isValidUsuario(incoming()) &&
+        incoming().uid == userId &&
+        incoming().creadoEn == request.time &&
+        (
+          isAdmin() ||
+          (isVerified() && request.auth.uid == userId && incoming().rol == 'cobrador' && incoming().activo == true)
+        );
+      allow update: if isValidId(userId) && isValidUsuario(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().creadoEn == existing().creadoEn &&
+        (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['nombre', 'rol', 'sucursalId', 'activo'])) ||
+          (isVerified() && request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['nombre'])) ||
+          (
+            isVerified() &&
+            request.auth.uid == userId &&
+            (!('sucursalId' in existing()) || existing().sucursalId == '') &&
+            incoming().sucursalId == defaultPersonalSucursalId() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['sucursalId'])
+          )
+        );
+      allow delete: if false;
+    }
+
+    // Sucursales / Tiendas: cada usuario tiene su propia tienda con dirección para tickets;
+    // el Admin puede crear/editar cualquier tienda y asignar el Encargado de tienda.
+    match /sucursales/{sucursalId} {
+      allow get: if isValidId(sucursalId) && isStaff();
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo';
+      allow create: if isValidId(sucursalId) && isValidSucursal(incoming()) &&
+        incoming().creadoEn == request.time &&
+        (
+          isAdmin() ||
+          (isVerified() && incoming().propietarioUid == request.auth.uid)
+        );
+      allow update: if isValidId(sucursalId) && isValidSucursal(incoming()) &&
+        incoming().creadoEn == existing().creadoEn &&
+        incoming().tiendaId == existing().tiendaId &&
+        (
+          isAdmin() ||
+          (
+            isStaff() &&
+            (existing().propietarioUid == request.auth.uid || isOwnSucursal(sucursalId)) &&
+            incoming().propietarioUid == existing().propietarioUid &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['direccion', 'telefono', 'actualizadoEn'])
+          )
+        );
+      allow delete: if isValidId(sucursalId) && isAdmin();
+    }
+
+    // Inventario privado por tienda: estrictamente aislado — cada tienda solo puede leer y modificar su propia base de datos de inventario (o el Administrador).
+    match /inventario_sucursales/{invId} {
+      allow get: if isValidId(invId) && isStaff() && (resource == null || isAdmin() || isOwnSucursal(existing().sucursalId));
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo' && isOwnSucursal(resource.data.sucursalId);
+      allow create: if isValidId(invId) && isValidInventarioSucursal(incoming()) &&
+        incoming().actualizadoEn == request.time &&
+        (
+          isAdmin() ||
+          (isStaff() && isOwnSucursal(incoming().sucursalId))
+        );
+      allow update: if isValidId(invId) && isValidInventarioSucursal(incoming()) &&
+        incoming().sucursalId == existing().sucursalId &&
+        incoming().productoId == existing().productoId &&
+        incoming().tiendaId == existing().tiendaId &&
+        incoming().actualizadoEn == request.time &&
+        (
+          isAdmin() ||
+          (isStaff() && isOwnSucursal(existing().sucursalId) && incoming().diff(existing()).affectedKeys().hasOnly(['stockDisponible', 'stockReservado', 'stockMinimo', 'sucursalNombre', 'actualizadoEn']))
+        );
+      allow delete: if isValidId(invId) && isAdmin();
+    }
+
+    // Turnos de Caja: cada miembro del personal abre, consulta y cierra ÚNICAMENTE su propia caja y su propio historial de cortes;
+    // los Administradores pueden revisar y administrar los cortes de caja de cada cobrador.
+    match /cajas_turnos/{turnoId} {
+      allow get: if isValidId(turnoId) && (isAdmin() || (isStaff() && (resource == null || existing().abiertaPorUid == request.auth.uid)));
+      allow list: if resource.data.tiendaId == 'alquia-apaseo' && (isAdmin() || (isStaff() && resource.data.abiertaPorUid == request.auth.uid));
+      allow create: if isValidId(turnoId) && isStaff() && isValidCajaTurno(incoming()) &&
+        incoming().abiertaPorUid == request.auth.uid &&
+        incoming().estado == 'abierta' &&
+        incoming().abiertaEn == request.time;
+      allow update: if isValidId(turnoId) && isValidCajaTurno(incoming()) &&
+        incoming().abiertaPorUid == existing().abiertaPorUid &&
+        incoming().abiertaEn == existing().abiertaEn &&
+        incoming().tiendaId == existing().tiendaId &&
+        (
+          isAdmin() ||
+          (
+            isStaff() &&
+            existing().abiertaPorUid == request.auth.uid &&
+            existing().estado == 'abierta' &&
+            incoming().estado == 'cerrada' &&
+            incoming().cerradaPorUid == request.auth.uid &&
+            incoming().cerradaEn == request.time &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'estado',
+              'cerradaEn',
+              'cerradaPorUid',
+              'cerradaPorNombre',
+              'totalVentasDia',
+              'totalAbonosDia',
+              'totalEfectivo',
+              'totalTarjeta',
+              'totalTransferencia',
+              'cantidadVentasBorradas',
+              'notasCierre'
+            ])
+          )
+        );
+      allow delete: if isValidId(turnoId) && isAdmin();
+    }
+
+    match /clientes/{clienteId} {
+      allow get: if isValidId(clienteId) && isStaff();
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo';
+      allow create: if isValidId(clienteId) && isStaff() && isValidCliente(incoming()) &&
+        incoming().creadoPorUid == request.auth.uid &&
+        incoming().creadoEn == request.time;
+      allow update: if isValidId(clienteId) && isValidCliente(incoming()) &&
+        incoming().creadoPorUid == existing().creadoPorUid &&
+        incoming().creadoEn == existing().creadoEn &&
+        incoming().tiendaId == existing().tiendaId &&
+        (
+          isAdmin() ||
+          (isStaff() && incoming().diff(existing()).affectedKeys().hasOnly(['nombre', 'telefono', 'direccion', 'referencias', 'saldoAFavor', 'actualizadoEn']))
+        );
+      allow delete: if isValidId(clienteId) && isAdmin();
+    }
+
+    match /proveedores/{proveedorId} {
+      allow get: if isValidId(proveedorId) && isStaff();
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo';
+      allow create: if isValidId(proveedorId) && isAdmin() && isValidProveedor(incoming()) && incoming().creadoEn == request.time;
+      allow update: if isValidId(proveedorId) && isAdmin() && isValidProveedor(incoming()) &&
+        incoming().creadoEn == existing().creadoEn &&
+        incoming().tiendaId == existing().tiendaId &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['nombre', 'contacto', 'telefono', 'correo', 'ciudad', 'categorias', 'notas', 'activo']);
+      allow delete: if isValidId(proveedorId) && isAdmin();
+    }
+
+    // Productos privados por tienda: cada tienda solo lee y gestiona su propia base de datos de inventario; SOLO el Admin puede editar detalles o ELIMINAR productos.
+    match /productos/{productoId} {
+      allow get: if isValidId(productoId) && isStaff() && (isAdmin() || resource == null || ('creadoPorSucursalId' in existing() && isOwnSucursal(existing().creadoPorSucursalId)));
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo' && isOwnSucursal(resource.data.creadoPorSucursalId);
+      allow create: if isValidId(productoId) && isStaff() && isValidProducto(incoming()) &&
+        incoming().creadoEn == request.time &&
+        (!('creadoPorUid' in incoming()) || incoming().creadoPorUid == request.auth.uid) &&
+        (isAdmin() || ('creadoPorSucursalId' in incoming() && isOwnSucursal(incoming().creadoPorSucursalId)));
+      allow update: if isValidId(productoId) && isValidProducto(incoming()) &&
+        incoming().creadoEn == existing().creadoEn &&
+        incoming().tiendaId == existing().tiendaId &&
+        (
+          isAdmin() ||
+          (
+            isStaff() &&
+            'creadoPorSucursalId' in existing() &&
+            isOwnSucursal(existing().creadoPorSucursalId) &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['stockDisponible', 'stockReservado', 'actualizadoEn'])
+          )
+        );
+      allow delete: if isValidId(productoId) && isAdmin();
+    }
+
+    // Ventas del día: cada usuario activo puede limpiar únicamente SUS propias ventas del día al cerrar su caja (o el Admin).
+    match /ventas/{ventaId} {
+      allow get: if isValidId(ventaId) && isStaff();
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo';
+      allow create: if isValidId(ventaId) && isStaff() && isValidVenta(incoming()) &&
+        incoming().vendedorUid == request.auth.uid &&
+        incoming().creadoEn == request.time;
+      allow update: if isValidId(ventaId) && isValidVenta(incoming()) &&
+        incoming().vendedorUid == existing().vendedorUid &&
+        incoming().creadoEn == existing().creadoEn &&
+        (
+          isAdmin() ||
+          (isStaff() && existing().estado == 'activa' && incoming().diff(existing()).affectedKeys().hasOnly(['estado']))
+        );
+      allow delete: if isValidId(ventaId) && existing().tiendaId == 'alquia-apaseo' && (isAdmin() || (isStaff() && existing().vendedorUid == request.auth.uid));
+    }
+
+    // Créditos: SOLO el Administrador puede aumentar pagos atrasados o ELIMINAR cuentas de crédito.
+    match /creditos/{creditoId} {
+      allow get: if isValidId(creditoId) && isStaff();
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo';
+      allow create: if isValidId(creditoId) && isStaff() && isValidCredito(incoming()) &&
+        incoming().vendedorUid == request.auth.uid &&
+        incoming().creadoEn == request.time;
+      allow update: if isValidId(creditoId) && isValidCredito(incoming()) &&
+        incoming().vendedorUid == existing().vendedorUid &&
+        incoming().ventaId == existing().ventaId &&
+        incoming().clienteId == existing().clienteId &&
+        incoming().creadoEn == existing().creadoEn &&
+        (
+          isAdmin() ||
+          (
+            isStaff() &&
+            existing().estado == 'activo' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['totalAbonado', 'saldoPendiente', 'pagosRealizados', 'proximaFechaPago', 'estado', 'actualizadoEn'])
+          )
+        );
+      allow delete: if isValidId(creditoId) && isAdmin();
+    }
+
+    // Apartados: SOLO el Administrador puede aumentar pagos atrasados o eliminar apartados.
+    match /apartados/{apartadoId} {
+      allow get: if isValidId(apartadoId) && isStaff();
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo';
+      allow create: if isValidId(apartadoId) && isStaff() && isValidApartado(incoming()) &&
+        incoming().vendedorUid == request.auth.uid &&
+        incoming().creadoEn == request.time;
+      allow update: if isValidId(apartadoId) && isValidApartado(incoming()) &&
+        incoming().vendedorUid == existing().vendedorUid &&
+        incoming().ventaId == existing().ventaId &&
+        incoming().clienteId == existing().clienteId &&
+        incoming().creadoEn == existing().creadoEn &&
+        (
+          isAdmin() ||
+          (
+            isStaff() &&
+            existing().estado == 'vigente' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['totalAbonado', 'saldoPendiente', 'proximoPagoFecha', 'fechaLimite', 'estado', 'resolucionCancelacion', 'montoRetenido', 'motivoCancelacion', 'actualizadoEn'])
+          )
+        );
+      allow delete: if isValidId(apartadoId) && isAdmin();
+    }
+
+    // Abonos: inmutables en actualización; SOLO el Administrador puede eliminar abonos y limpiar cobranza del día
+    match /abonos/{abonoId} {
+      allow get: if isValidId(abonoId) && isStaff();
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo';
+      allow create: if isValidId(abonoId) && isStaff() && isValidAbono(incoming()) &&
+        incoming().cobradorUid == request.auth.uid &&
+        incoming().creadoEn == request.time;
+      allow update: if false;
+      allow delete: if isValidId(abonoId) && isAdmin() && existing().tiendaId == 'alquia-apaseo';
+    }
+
+    // Alertas de vencimiento y próximos a vencer
+    match /alertas_vencimiento/{alertaId} {
+      allow get: if isValidId(alertaId) && isStaff();
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo';
+      allow create: if isValidId(alertaId) && isStaff() && isValidAlertaVencimiento(incoming()) &&
+        incoming().creadoPorUid == request.auth.uid &&
+        incoming().creadoEn == request.time;
+      allow update: if isValidId(alertaId) && isStaff() && isValidAlertaVencimiento(incoming()) &&
+        incoming().creadoPorUid == existing().creadoPorUid &&
+        incoming().creadoEn == existing().creadoEn &&
+        incoming().tiendaId == existing().tiendaId &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['estado', 'correoDestino', 'metodoEnvio']);
+      allow delete: if isValidId(alertaId) && isAdmin();
+    }
+
+    // Kardex aislado por tienda (inmutable en actualización; solo Admin puede eliminar registros)
+    match /movimientos_inventario/{movId} {
+      allow get: if isValidId(movId) && isStaff() && (isAdmin() || resource == null || ('sucursalId' in existing() && isOwnSucursal(existing().sucursalId)));
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo' && isOwnSucursal(resource.data.sucursalId);
+      allow create: if isValidId(movId) && isStaff() && isValidMovimiento(incoming()) &&
+        incoming().usuarioUid == request.auth.uid &&
+        incoming().creadoEn == request.time;
+      allow update: if false;
+      allow delete: if isValidId(movId) && isAdmin() && existing().tiendaId == 'alquia-apaseo';
+    }
+
+    match /compras_proveedores/{compraId} {
+      allow get: if isValidId(compraId) && isStaff();
+      allow list: if isStaff() && resource.data.tiendaId == 'alquia-apaseo';
+      allow create: if isValidId(compraId) && isAdmin() && isValidCompraProveedor(incoming()) &&
+        incoming().registradoPorUid == request.auth.uid &&
+        incoming().creadoEn == request.time;
+      allow update, delete: if false;
+    }
+  }
+}

@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-display: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --alquia-white: #ffffff;
+    --alquia-surface: #f7f7f8;
+    --alquia-black: #111114;
+    --alquia-red: #c81e1e;
+    --alquia-gold-1: #ecc95e;
+    --alquia-gold-2: #cfa024;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #f7f7f8;
+    color: #111114;
+  }
+
+  .dark body {
+    background-color: #0b0b0d;
+    color: #fafafa;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono-num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Botones interactivos Dorados (Alto contraste WCAG AAA con texto negro #111114) */
+.alquia-gold-btn {
+  background: linear-gradient(180deg, #edd06d 0%, #d4a329 58%, #be8e18 100%);
+  color: #111114;
+  border: 1px solid #a37810;
+  box-shadow: 0 8px 20px -8px rgba(190, 142, 24, 0.55), inset 0 1px 0 rgba(255, 250, 224, 0.55);
+  transition: transform 0.14s ease, filter 0.16s ease, box-shadow 0.16s ease;
+}
+
+.alquia-gold-btn:hover:not(:disabled) {
+  filter: brightness(1.04);
+  box-shadow: 0 10px 24px -8px rgba(190, 142, 24, 0.7), inset 0 1px 0 rgba(255, 250, 224, 0.7);
+}
+
+.alquia-gold-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Variante secundaria dorada sutil para acciones en filas y tablas */
+.alquia-gold-outline-btn {
+  background-color: #fdf8e7;
+  color: #111114;
+  border: 1px solid #d4a329;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.alquia-gold-outline-btn:hover:not(:disabled) {
+  background-color: #f7e6b2;
+  border-color: #b88914;
+}
+
+.dark .alquia-gold-outline-btn {
+  background-color: rgba(212, 163, 41, 0.16);
+  color: #f7df8d;
+  border-color: rgba(237, 208, 109, 0.45);
+}
+
+.dark .alquia-gold-outline-btn:hover:not(:disabled) {
+  background-color: rgba(212, 163, 41, 0.28);
+}
+
+/* Botón rojo carmesí para alertas críticas / cancelaciones */
+.alquia-red-btn {
+  background-color: #c81e1e;
+  color: #ffffff;
+  border: 1px solid #991b1b;
+  transition: background-color 0.15s ease;
+}
+
+.alquia-red-btn:hover:not(:disabled) {
+  background-color: #991b1b;
+}
+
+/* Paneles estructurales Negro + Rojo Carmesí */
+.alquia-dark-panel {
+  background: linear-gradient(145deg, #0b0b0e 0%, #3a090c 52%, #111115 100%);
+}
+
+/* Tarjetas limpias Blanco / Negro */
+.alquia-card {
+  box-shadow: 0 4px 20px -6px rgba(17, 17, 20, 0.08), 0 1px 3px rgba(17, 17, 20, 0.04);
+}
+
+.dark .alquia-card {
+  box-shadow: 0 10px 28px -10px rgba(0, 0, 0, 0.65);
+}
+
+/* Reglas de impresión térmica 80 mm */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 2mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #thermal-ticket-80mm,
+  #thermal-ticket-80mm * {
+    visibility: visible !important;
+  }
+
+  #thermal-ticket-80mm {
+    position: fixed !important;
+    inset: 0 auto auto 0 !important;
+    width: 76mm !important;
+    max-width: 76mm !important;
+    margin: 0 !important;
+    padding: 3mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+    font-size: 11px !important;
+  }
+}

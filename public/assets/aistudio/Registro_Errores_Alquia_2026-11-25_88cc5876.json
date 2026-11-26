@@ -1,0 +1,262 @@
+{
+  "sistema": "Mueblería Alquia",
+  "exportadoEn": "2026-11-25T23:00:34.636Z",
+  "totalErrores": 15,
+  "registros": [
+    {
+      "id": "err-mwwk60o0-a7ipt",
+      "timestamp": "2026-11-25T20:10:35.616Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en productos. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "productos",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwk60nq-58m1o",
+      "timestamp": "2026-11-25T20:10:35.606Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en movimientos_inventario. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "movimientos_inventario",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwk60n5-w2g85",
+      "timestamp": "2026-11-25T20:10:35.585Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en inventario_sucursales. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "inventario_sucursales",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwk60mu-vbgnm",
+      "timestamp": "2026-11-25T20:10:35.574Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en cajas_turnos. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "cajas_turnos",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwk60kz-olzax",
+      "timestamp": "2026-11-25T20:10:35.507Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en usuarios. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "usuarios",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwk5oqx-nxwq6",
+      "timestamp": "2026-11-25T20:10:20.169Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en movimientos_inventario. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "movimientos_inventario",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwk5oou-tpoe3",
+      "timestamp": "2026-11-25T20:10:20.094Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en productos. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "productos",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwk5oos-cbtse",
+      "timestamp": "2026-11-25T20:10:20.092Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en inventario_sucursales. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "inventario_sucursales",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwk5ooi-n8wiy",
+      "timestamp": "2026-11-25T20:10:20.082Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en cajas_turnos. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "cajas_turnos",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwk5om2-jpz0c",
+      "timestamp": "2026-11-25T20:10:19.994Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en usuarios. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "usuarios",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwebmgv-ggrpc",
+      "timestamp": "2026-11-25T17:26:59.455Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en inventario_sucursales. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "inventario_sucursales",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwweaxke-2ltpb",
+      "timestamp": "2026-11-25T17:26:27.182Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en productos. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "productos",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwe9e0y-mge8u",
+      "timestamp": "2026-11-25T17:25:15.202Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en usuarios. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "usuarios",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwe8ul3-592ik",
+      "timestamp": "2026-11-25T17:24:50.007Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en cajas_turnos. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "cajas_turnos",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    },
+    {
+      "id": "err-mwwe8eg4-m2xmi",
+      "timestamp": "2026-11-25T17:24:29.092Z",
+      "source": "firestore",
+      "action": "firestore:list",
+      "severity": "error",
+      "code": "FIRESTORE_LIST",
+      "message": "Missing or insufficient permissions.",
+      "userMessage": "Permiso denegado al realizar \"list\" en movimientos_inventario. Verifica tu cargo de Administrador o tu sesión.",
+      "context": {
+        "path": "movimientos_inventario",
+        "operationType": "list",
+        "userId": "dZkmghsgrzWMxRHwGnQAfodHL9o2",
+        "email": "d.olivares.imilenio@gmail.com"
+      },
+      "stack": "FirebaseError: Missing or insufficient permissions."
+    }
+  ]
+}
