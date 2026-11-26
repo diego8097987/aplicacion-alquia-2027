@@ -20,7 +20,7 @@ export function AlquiaLogo({ compact = false, inverted = false, size = 'md' }: A
         }`}
       >
         <img
-          src="/alquia-ticket-logo.svg"
+          src="./alquia-ticket-logo.svg"
           alt="Mueblería Alquia"
           className={`${imgHeight} w-auto object-contain`}
         />

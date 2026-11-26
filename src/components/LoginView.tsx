@@ -106,7 +106,7 @@ export function LoginView() {
       <div className="min-h-screen flex items-center justify-center bg-[#F7F7F8] dark:bg-[#0B0B0D] p-6">
         <div className="w-full max-w-md rounded-3xl bg-white dark:bg-[#141418] border border-zinc-200 dark:border-zinc-800 p-8 alquia-card text-center space-y-5">
           <img
-            src="/alquia-ticket-logo.svg"
+            src="./alquia-ticket-logo.svg"
             alt="Mueblería Alquia"
             className="h-24 w-auto mx-auto object-contain rounded-xl bg-white p-2 border border-zinc-200"
           />
@@ -167,7 +167,7 @@ export function LoginView() {
         <div className="my-10 lg:my-0 flex flex-col items-start gap-6 max-w-md">
           <div className="rounded-3xl bg-white px-7 py-5 shadow-2xl border-2 border-[#D4A329]/70">
             <img
-              src="/alquia-ticket-logo.svg"
+              src="./alquia-ticket-logo.svg"
               alt="Mueblería Alquia"
               className="h-28 sm:h-32 w-auto object-contain"
             />

@@ -1079,7 +1079,7 @@ export function ConfigDeployView() {
             </span>
             <div className="w-full max-w-[300px] bg-white text-black border border-dashed border-zinc-400 rounded-xl p-5 font-mono text-center text-[11px] space-y-1 shadow-inner">
               <img
-                src="/alquia-ticket-logo.svg"
+                src="./alquia-ticket-logo.svg"
                 alt="Logotipo de ticket Mueblería Alquia"
                 className="h-14 w-auto mx-auto mb-2 object-contain"
               />

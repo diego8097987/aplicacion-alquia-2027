@@ -207,7 +207,7 @@ export function TicketModal() {
             <div className="w-full max-w-[310px] bg-white text-black border border-dashed border-zinc-300 rounded-xl p-4 font-mono text-[11px] leading-relaxed shadow-inner">
               <div className="text-center border-b border-dashed border-zinc-400 pb-2.5 mb-2.5">
                 <img
-                  src="/alquia-ticket-logo.svg"
+                  src="./alquia-ticket-logo.svg"
                   alt="Logo Mueblería Alquia"
                   className="h-14 w-auto mx-auto mb-1.5 object-contain"
                 />

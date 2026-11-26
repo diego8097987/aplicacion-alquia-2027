@@ -2,7 +2,8 @@
   "name": "Mueblería Alquia — Punto de Venta y Cobranza",
   "short_name": "Mueblería Alquia",
   "description": "Sistema administrativo de punto de venta, créditos, apartados, caja del día e inventario de Mueblería Alquia.",
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#111114",
@@ -10,19 +11,19 @@
   "lang": "es-MX",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/alquia-ticket-logo.svg",
+      "src": "./alquia-ticket-logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
